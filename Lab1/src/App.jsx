@@ -27,19 +27,18 @@ function App() {
       <nav className="menu-bar">
         <button
           onClick={() => setActiveModal("work1")}
-          disabled={activeModal !== null}
+          // disabled={activeModal !== null}
         >
           Робота1
         </button>
         <button
           onClick={() => setActiveModal("work2")}
-          disabled={activeModal !== null}
+          //disabled={activeModal !== null}
         >
           Робота2
         </button>
       </nav>
 
-      {}
       <main className="main-content">
         <div className="result-box">
           <div className="result-item">
@@ -51,7 +50,6 @@ function App() {
         </div>
       </main>
 
-      {}
       {activeModal === "work1" && (
         <Module1Modal onConfirm={handleConfirmWork1} onCancel={closeModal} />
       )}

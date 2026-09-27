@@ -1,34 +1,19 @@
 import React, { useState } from "react";
+import Step1 from "./step1";
+import Step2 from "./step2";
 
 export default function Module2Modal({ onConfirm, onCancel }) {
   const [step, setStep] = useState(1);
 
   if (step === 1) {
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content">
-          <h3>Робота 2</h3>
-          <div className="button-group">
-            <button onClick={() => setStep(2)}>Далі &gt;</button>
-            <button onClick={onCancel}>Відміна</button>
-          </div>
-        </div>
-      </div>
-    );
+    return <Step1 onNext={() => setStep(2)} onCancel={onCancel} />;
   }
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <h3>Робота 2</h3>
-        <div className="button-group">
-          <button onClick={() => setStep(1)}>&lt; Назад</button>
-          <button onClick={() => onConfirm("Робота 2 виконана успішно!")}>
-            Так
-          </button>
-          <button onClick={onCancel}>Відміна</button>
-        </div>
-      </div>
-    </div>
+    <Step2
+      onBack={() => setStep(1)}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    />
   );
 }
