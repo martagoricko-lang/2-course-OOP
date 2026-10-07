@@ -3,7 +3,7 @@ import {
   PointShape,
   LineShape,
   RectangleShape,
-  CircleShape,
+  EllipseShape,
   createShapeFromJSON,
 } from "./shapes";
 import "./App.css";
@@ -15,9 +15,10 @@ function App() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
+  const N = 106;
   const canvasRef = useRef(null);
-  const shapesRef = useRef([]);
-  const currentTempBoxRef = useRef(null); // Для K2 = 2 (гумовий прямокутник)
+  const pcshapeRef = useRef([]);
+  const currentTempLineRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const redrawCanvas = () => {
@@ -26,21 +27,17 @@ function App() {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Малювання фігур
-    shapesRef.current.forEach((shape) => shape.draw(ctx));
+    pcshapeRef.current.forEach((shape) => shape.draw(ctx));
 
-    // Візуалізація методом «гумового прямокутника» (K2 = 2)
-    if (currentTempBoxRef.current) {
-      const { x1, y1, x2, y2 } = currentTempBoxRef.current;
-      const startX = Math.min(x1, x2);
-      const startY = Math.min(y1, y2);
-      const width = Math.abs(x2 - x1);
-      const height = Math.abs(y2 - y1);
-
+    if (currentTempLineRef.current) {
+      const { x1, y1, x2, y2 } = currentTempLineRef.current;
       ctx.save();
-      ctx.strokeStyle = "red";
-      ctx.setLineDash([4, 4]); // Пунктирний прямокутник
-      ctx.strokeRect(startX, startY, width, height);
+      ctx.strokeStyle = "blue";
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
       ctx.restore();
     }
   };
@@ -58,7 +55,12 @@ function App() {
     setIsDrawing(true);
 
     if (currentTool === "point") {
-      shapesRef.current.push(new PointShape(x, y, x, y));
+      if (pcshapeRef.current.length >= N) {
+        alert(`Досягнуто ліміт масиву об'єктів (${N})!`);
+        setIsDrawing(false);
+        return;
+      }
+      pcshapeRef.current.push(new PointShape(x, y, x, y));
       redrawCanvas();
       setIsDrawing(false);
     }
@@ -71,8 +73,7 @@ function App() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Гумовий прямокутник (K2 = 2)
-    currentTempBoxRef.current = {
+    currentTempLineRef.current = {
       x1: startPos.x,
       y1: startPos.y,
       x2: x,
@@ -89,33 +90,40 @@ function App() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    let finalShape = null;
-    if (currentTool === "line") {
-      finalShape = new LineShape(startPos.x, startPos.y, x, y);
-    } else if (currentTool === "rect") {
-      finalShape = new RectangleShape(startPos.x, startPos.y, x, y);
-    } else if (currentTool === "circle") {
-      finalShape = new CircleShape(startPos.x, startPos.y, x, y);
+    if (pcshapeRef.current.length >= N) {
+      alert(`Досягнуто ліміт масиву об'єктів (${N})!`);
+      currentTempLineRef.current = null;
+      setIsDrawing(false);
+      redrawCanvas();
+      return;
     }
+
+    let finalShape = null;
+    if (currentTool === "line")
+      finalShape = new LineShape(startPos.x, startPos.y, x, y);
+    else if (currentTool === "rect")
+      finalShape = new RectangleShape(startPos.x, startPos.y, x, y);
+    else if (currentTool === "ellipse")
+      finalShape = new EllipseShape(startPos.x, startPos.y, x, y);
 
     if (finalShape) {
-      shapesRef.current.push(finalShape);
+      pcshapeRef.current.push(finalShape);
     }
 
-    currentTempBoxRef.current = null;
+    currentTempLineRef.current = null;
     setIsDrawing(false);
     redrawCanvas();
   };
 
   const handleClearCanvas = () => {
-    shapesRef.current = [];
-    currentTempBoxRef.current = null;
+    pcshapeRef.current = [];
+    currentTempLineRef.current = null;
     redrawCanvas();
     setOpenMenu(null);
   };
 
   const handleSaveToFile = () => {
-    const dataToSave = shapesRef.current.map((shape) => shape.toJSON());
+    const dataToSave = pcshapeRef.current.map((shape) => shape.toJSON());
     const jsonString = JSON.stringify(dataToSave, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -137,7 +145,7 @@ function App() {
       try {
         const parsedData = JSON.parse(event.target.result);
         if (Array.isArray(parsedData)) {
-          shapesRef.current = parsedData
+          pcshapeRef.current = parsedData
             .map((data) => createShapeFromJSON(data))
             .filter((shape) => shape !== null);
 
@@ -151,27 +159,10 @@ function App() {
     setOpenMenu(null);
   };
 
-  const getToolTitle = () => {
-    switch (currentTool) {
-      case "point":
-        return "Крапка";
-      case "line":
-        return "Лінія";
-      case "rect":
-        return "Прямокутник";
-      case "circle":
-        return "Окружність";
-      default:
-        return "";
-    }
-  };
-
   return (
     <div className="app-container">
-      {/* Заголовок */}
-      <header className="window-header">OOP_lab3 - {getToolTitle()}</header>
+      <header className="window-header">OOP_lab3</header>
 
-      {/* Меню: Файл, Об'єкти, Довідка */}
       <nav className="menu-bar">
         <div className="dropdown">
           <button
@@ -228,11 +219,11 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  setCurrentTool("circle");
+                  setCurrentTool("ellipse");
                   setOpenMenu(null);
                 }}
               >
-                {currentTool === "circle" ? "✓ " : ""}Окружність
+                {currentTool === "ellipse" ? "✓ " : ""}Еліпс
               </button>
             </div>
           )}
@@ -249,31 +240,32 @@ function App() {
         </button>
       </nav>
 
-      {/* Панель інструментів (Toolbar) з іконками та підказками (Tooltips) */}
+      {/* Toolbar */}
       <div className="toolbar">
         <button
           className={`toolbar-btn ${currentTool === "point" ? "active" : ""}`}
           onClick={() => setCurrentTool("point")}
-          title="Малювання крапки"
+          title="Крапка"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="4" fill="currentColor" />
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5" fill="currentColor" />
           </svg>
         </button>
 
         <button
           className={`toolbar-btn ${currentTool === "line" ? "active" : ""}`}
           onClick={() => setCurrentTool("line")}
-          title="Малювання лінії"
+          title="Лінія"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24">
+          <svg width="18" height="18" viewBox="0 0 24 24">
             <line
               x1="4"
               y1="20"
               x2="20"
               y2="4"
               stroke="currentColor"
-              strokeWidth="3"
+              strokeWidth="2.5"
+              strokeLinecap="round"
             />
           </svg>
         </button>
@@ -281,9 +273,9 @@ function App() {
         <button
           className={`toolbar-btn ${currentTool === "rect" ? "active" : ""}`}
           onClick={() => setCurrentTool("rect")}
-          title="Малювання прямокутника"
+          title="Прямокутник"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24">
+          <svg width="18" height="18" viewBox="0 0 24 24">
             <rect
               x="4"
               y="4"
@@ -292,20 +284,22 @@ function App() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
+              rx="1"
             />
           </svg>
         </button>
 
         <button
-          className={`toolbar-btn ${currentTool === "circle" ? "active" : ""}`}
-          onClick={() => setCurrentTool("circle")}
-          title="Малювання окружності"
+          className={`toolbar-btn ${currentTool === "ellipse" ? "active" : ""}`}
+          onClick={() => setCurrentTool("ellipse")}
+          title="Еліпс"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24">
-            <circle
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <ellipse
               cx="12"
               cy="12"
-              r="8"
+              rx="9"
+              ry="6"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -322,29 +316,42 @@ function App() {
         onChange={handleOpenFile}
       />
 
-      {/* Полотно Canvas */}
       <div className="canvas-container">
         <canvas
           ref={canvasRef}
           width={780}
-          height={420}
+          height={400}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
         />
       </div>
 
-      {/* Модальне вікно Довідка */}
       {showAbout && (
-        <div className="modal-overlay">
-          <div className="about-modal">
-            <h2>Про програму (Лабораторна 3)</h2>
+        <div className="modal-overlay" onClick={() => setShowAbout(false)}>
+          <div className="about-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Варіант 6</h2>
             <div className="about-section">
-              <strong>Варіант: Ж = 6 (Ж_лаб2 + 1)</strong>
-              <p>• K1 = 1: Крапка, Лінія, Прямокутник, Окружність</p>
-              <p>• K2 = 2: Гумовий прямокутник (червоний пунктир)</p>
-              <p>• K3 = 3: Збереження та завантаження JSON-файлів</p>
-              <p>• Реалізовано Toolbar з іконками та tooltips</p>
+              <strong>Масив</strong>
+              <p>динамічний pcshape, N = 106</p>
+            </div>
+            <div className="about-section">
+              <strong>Гумовий слід</strong>
+              <p>суцільна лінія синього кольору</p>
+            </div>
+            <div className="about-section">
+              <strong>Прямокутник</strong>
+              <p>Увід: по двом протилежним кутам</p>
+              <p>Відображення: чорний контур з жовтим заповненням</p>
+            </div>
+            <div className="about-section">
+              <strong>Еліпс</strong>
+              <p>Увід: від центру до кута охоплюючого прямокутника</p>
+              <p>Відображення: чорний контур з білим заповненням</p>
+            </div>
+            <div className="about-section">
+              <strong>Позначка об'єкта</strong>
+              <p>в меню (галочкою)</p>
             </div>
             <button className="close-btn" onClick={() => setShowAbout(false)}>
               Закрити
