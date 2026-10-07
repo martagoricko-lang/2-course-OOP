@@ -1,0 +1,208 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #fff0f5;
+}
+
+.app-container {
+  width: 820px;
+  margin: 30px auto;
+  border: 2px solid #d87093;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(216, 112, 147, 0.25);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Заголовок вікна */
+.window-header {
+  background-color: #d87093;
+  color: #ffffff;
+  padding: 10px 16px;
+  font-weight: bold;
+  font-size: 15px;
+  text-align: left;
+}
+
+/* Панель меню */
+.menu-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: #ffe4e1;
+  border-bottom: 1px solid #ffb6c1;
+  padding: 0 8px;
+  position: relative;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333333;
+  font-weight: 600;
+  display: block;
+}
+
+.menu-btn:hover,
+.menu-btn.active {
+  background-color: #ffc0cb;
+}
+
+/* Toolbar з іконками */
+.toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  background-color: #fff0f5;
+  padding: 6px 12px;
+  border-bottom: 1px solid #ffb6c1;
+}
+
+.toolbar-btn {
+  background-color: #ffffff;
+  border: 1px solid #d87093;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d87093;
+  transition: all 0.2s;
+}
+
+.toolbar-btn:hover {
+  background-color: #ffe4e1;
+}
+
+.toolbar-btn.active {
+  background-color: #d87093;
+  color: #ffffff;
+}
+
+/* Випадаюче меню */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #ffffff;
+  border: 1px solid #d87093;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  min-width: 170px;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
+.dropdown-menu button {
+  background: none;
+  border: none;
+  padding: 10px 14px;
+  text-align: left;
+  cursor: pointer;
+  color: #222222;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dropdown-menu button:hover {
+  background-color: #ffe4e1;
+  color: #d87093;
+}
+
+/* Контейнер Canvas */
+.canvas-container {
+  display: flex;
+  justify-content: center;
+  padding: 15px;
+  background-color: #fff9fa;
+}
+
+canvas {
+  border: 1px solid #d87093;
+  background-color: #ffffff;
+  cursor: crosshair;
+  border-radius: 4px;
+}
+
+/* Компактне Модальне Вікно Довідки */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.about-modal {
+  background-color: #ffffff;
+  border: 2px solid #d87093;
+  border-radius: 8px;
+  padding: 12px 20px;
+  width: 380px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  color: #333333;
+}
+
+.about-modal h2 {
+  margin-top: 2px;
+  margin-bottom: 8px;
+  color: #d87093;
+  border-bottom: 1px solid #ffe4e1;
+  padding-bottom: 4px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.about-section {
+  margin-bottom: 5px;
+}
+
+.about-section strong {
+  display: inline-block;
+  font-size: 12px;
+  color: #111111;
+  margin-right: 6px;
+}
+
+.about-section p {
+  display: block;
+  margin: 2px 0;
+  font-size: 12px;
+  color: #555555;
+  line-height: 1.2;
+}
+
+.close-btn {
+  margin-top: 8px;
+  margin-bottom: 2px;
+  background-color: #d87093;
+  color: white;
+  border: none;
+  padding: 4px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 12px;
+  float: right;
+}
+
+.close-btn:hover {
+  background-color: #c75b80;
+}
