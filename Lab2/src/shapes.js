@@ -20,7 +20,6 @@ export class PointShape extends Shape {
 
 export class LineShape extends Shape {
   draw(ctx) {
-    ctx.strokeStyle = "black";
     ctx.beginPath();
     ctx.moveTo(this.x1, this.y1);
     ctx.lineTo(this.x2, this.y2);
@@ -29,14 +28,17 @@ export class LineShape extends Shape {
 }
 
 export class RectangleShape extends Shape {
-  draw(ctx) {
+  draw(ctx, isTemporary) {
     const width = Math.abs(this.x2 - this.x1) * 2;
     const height = Math.abs(this.y2 - this.y1) * 2;
     const startX = this.x1 - width / 2;
     const startY = this.y1 - height / 2;
 
-    ctx.fillStyle = "white";
-    ctx.strokeStyle = "black";
+    if (!isTemporary) {
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "black";
+    }
+
     ctx.fillRect(startX, startY, width, height);
     ctx.strokeRect(startX, startY, width, height);
   }
@@ -49,7 +51,6 @@ export class EllipseShape extends Shape {
     const radiusX = Math.abs(this.x2 - this.x1) / 2;
     const radiusY = Math.abs(this.y2 - this.y1) / 2;
 
-    ctx.strokeStyle = "black";
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
     ctx.stroke();
