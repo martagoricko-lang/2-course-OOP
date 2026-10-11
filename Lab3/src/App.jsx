@@ -3,7 +3,7 @@ import {
   PointShape,
   LineShape,
   RectangleShape,
-  EllipseShape,
+  CircleShape,
   createShapeFromJSON,
 } from "./shapes";
 import "./App.css";
@@ -18,26 +18,25 @@ function App() {
   const N = 106;
   const canvasRef = useRef(null);
   const pcshapeRef = useRef([]);
-  const currentTempLineRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const redrawCanvas = () => {
+  const redrawCanvas = (tempShape) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    ctx.strokeStyle = "black";
     pcshapeRef.current.forEach((shape) => shape.draw(ctx));
 
-    if (currentTempLineRef.current) {
-      const { x1, y1, x2, y2 } = currentTempLineRef.current;
+    if (isDrawing && tempShape) {
       ctx.save();
       ctx.strokeStyle = "blue";
+      ctx.fillStyle = "transparent";
       ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+
+      tempShape.draw(ctx, true);
+
       ctx.restore();
     }
   };
@@ -55,13 +54,12 @@ function App() {
     setIsDrawing(true);
 
     if (currentTool === "point") {
-      if (pcshapeRef.current.length >= N) {
+      if (pcshapeRef.current.length < N) {
+        pcshapeRef.current.push(new PointShape(x, y, x, y));
+        redrawCanvas();
+      } else {
         alert(`Досягнуто ліміт масиву об'єктів (${N})!`);
-        setIsDrawing(false);
-        return;
       }
-      pcshapeRef.current.push(new PointShape(x, y, x, y));
-      redrawCanvas();
       setIsDrawing(false);
     }
   };
@@ -73,14 +71,16 @@ function App() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    currentTempLineRef.current = {
-      x1: startPos.x,
-      y1: startPos.y,
-      x2: x,
-      y2: y,
-    };
+    let tempShape = null;
+    if (currentTool === "line") {
+      tempShape = new LineShape(startPos.x, startPos.y, x, y);
+    } else if (currentTool === "rect") {
+      tempShape = new RectangleShape(startPos.x, startPos.y, x, y);
+    } else if (currentTool === "circle") {
+      tempShape = new CircleShape(startPos.x, startPos.y, x, y);
+    }
 
-    redrawCanvas();
+    redrawCanvas(tempShape);
   };
 
   const handleMouseUp = (e) => {
@@ -90,34 +90,32 @@ function App() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    setIsDrawing(false);
+
     if (pcshapeRef.current.length >= N) {
       alert(`Досягнуто ліміт масиву об'єктів (${N})!`);
-      currentTempLineRef.current = null;
-      setIsDrawing(false);
       redrawCanvas();
       return;
     }
 
     let finalShape = null;
-    if (currentTool === "line")
+    if (currentTool === "line") {
       finalShape = new LineShape(startPos.x, startPos.y, x, y);
-    else if (currentTool === "rect")
+    } else if (currentTool === "rect") {
       finalShape = new RectangleShape(startPos.x, startPos.y, x, y);
-    else if (currentTool === "ellipse")
-      finalShape = new EllipseShape(startPos.x, startPos.y, x, y);
+    } else if (currentTool === "circle") {
+      finalShape = new CircleShape(startPos.x, startPos.y, x, y);
+    }
 
     if (finalShape) {
       pcshapeRef.current.push(finalShape);
     }
 
-    currentTempLineRef.current = null;
-    setIsDrawing(false);
     redrawCanvas();
   };
 
   const handleClearCanvas = () => {
     pcshapeRef.current = [];
-    currentTempLineRef.current = null;
     redrawCanvas();
     setOpenMenu(null);
   };
@@ -219,11 +217,11 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  setCurrentTool("ellipse");
+                  setCurrentTool("circle");
                   setOpenMenu(null);
                 }}
               >
-                {currentTool === "ellipse" ? "✓ " : ""}Еліпс
+                {currentTool === "circle" ? "✓ " : ""}Окружність
               </button>
             </div>
           )}
@@ -240,7 +238,6 @@ function App() {
         </button>
       </nav>
 
-      {/* Toolbar */}
       <div className="toolbar">
         <button
           className={`toolbar-btn ${currentTool === "point" ? "active" : ""}`}
@@ -290,16 +287,15 @@ function App() {
         </button>
 
         <button
-          className={`toolbar-btn ${currentTool === "ellipse" ? "active" : ""}`}
-          onClick={() => setCurrentTool("ellipse")}
-          title="Еліпс"
+          className={`toolbar-btn ${currentTool === "circle" ? "active" : ""}`}
+          onClick={() => setCurrentTool("circle")}
+          title="Окружність"
         >
           <svg width="18" height="18" viewBox="0 0 24 24">
-            <ellipse
+            <circle
               cx="12"
               cy="12"
-              rx="9"
-              ry="6"
+              r="8"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -320,7 +316,7 @@ function App() {
         <canvas
           ref={canvasRef}
           width={780}
-          height={400}
+          height={420}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -328,30 +324,30 @@ function App() {
       </div>
 
       {showAbout && (
-        <div className="modal-overlay" onClick={() => setShowAbout(false)}>
-          <div className="about-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="about-modal">
             <h2>Варіант 6</h2>
             <div className="about-section">
               <strong>Масив</strong>
-              <p>динамічний pcshape, N = 106</p>
+              <p>динамічний, N = 106</p>
             </div>
             <div className="about-section">
               <strong>Гумовий слід</strong>
-              <p>суцільна лінія синього кольору</p>
+              <p>суцільна синя лінія</p>
             </div>
             <div className="about-section">
               <strong>Прямокутник</strong>
-              <p>Увід: по двом протилежним кутам</p>
-              <p>Відображення: чорний контур з жовтим заповненням</p>
+              <p>Увід: по протилежних кутах</p>
+              <p>Відображення: чорний контур із жовтою заливкою</p>
             </div>
             <div className="about-section">
-              <strong>Еліпс</strong>
-              <p>Увід: від центру до кута охоплюючого прямокутника</p>
-              <p>Відображення: чорний контур з білим заповненням</p>
+              <strong>Окружність / Еліпс</strong>
+              <p>Увід: від центру до кута </p>
+              <p>Відображення: чорний контур із білою заливкою </p>
             </div>
             <div className="about-section">
-              <strong>Позначка об'єкта</strong>
-              <p>в меню (галочкою)</p>
+              <strong>Позначка типу об'єкта</strong>
+              <p>в меню</p>
             </div>
             <button className="close-btn" onClick={() => setShowAbout(false)}>
               Закрити
