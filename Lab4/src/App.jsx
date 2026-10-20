@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
-import { globalEditor } from "./editor";
-import { PointShape, createShapeFromJSON } from "./shapes";
+import { globalMyEditor } from "./MyEditor";
+import {
+  PointShape,
+  LineShape,
+  RectangleShape,
+  CircleShape,
+  LineWithCirclesShape,
+  CubeShape,
+  createShapeFromJSON,
+} from "./shapes";
 import "./App.css";
 
 function App() {
@@ -13,23 +21,23 @@ function App() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const redrawCanvas = () => {
+  const redrawCanvas = (tempShape) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    globalEditor.pcshape.forEach((shape) => shape.draw(ctx));
+    ctx.strokeStyle = "black";
+    globalMyEditor.getShapes().forEach((shape) => shape.draw(ctx));
 
-    if (globalEditor.tempShape) {
-      const { x1, y1, x2, y2 } = globalEditor.tempShape;
+    if (isDrawing && tempShape) {
       ctx.save();
-      ctx.strokeStyle = "blue";
+      ctx.strokeStyle = "black";
+      ctx.fillStyle = "transparent";
       ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
+
+      tempShape.draw(ctx, true);
+
       ctx.restore();
     }
   };
@@ -37,6 +45,25 @@ function App() {
   useEffect(() => {
     redrawCanvas();
   }, []);
+
+  const createShapeInstance = (tool, x1, y1, x2, y2) => {
+    switch (tool) {
+      case "point":
+        return new PointShape(x1, y1, x2, y2);
+      case "line":
+        return new LineShape(x1, y1, x2, y2);
+      case "rect":
+        return new RectangleShape(x1, y1, x2, y2);
+      case "circle":
+        return new CircleShape(x1, y1, x2, y2);
+      case "line_circles":
+        return new LineWithCirclesShape(x1, y1, x2, y2);
+      case "cube":
+        return new CubeShape(x1, y1, x2, y2);
+      default:
+        return null;
+    }
+  };
 
   const handleMouseDown = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
@@ -47,8 +74,7 @@ function App() {
     setIsDrawing(true);
 
     if (currentTool === "point") {
-      const added = globalEditor.addShape(new PointShape(x, y, x, y));
-      if (!added) alert(`Досягнуто ліміт (${globalEditor.N})!`);
+      globalMyEditor.addShape(new PointShape(x, y, x, y));
       redrawCanvas();
       setIsDrawing(false);
     }
@@ -61,8 +87,14 @@ function App() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    globalEditor.tempShape = { x1: startPos.x, y1: startPos.y, x2: x, y2: y };
-    redrawCanvas();
+    const tempShape = createShapeInstance(
+      currentTool,
+      startPos.x,
+      startPos.y,
+      x,
+      y,
+    );
+    redrawCanvas(tempShape);
   };
 
   const handleMouseUp = (e) => {
@@ -72,31 +104,32 @@ function App() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    const shape = globalEditor.createShape(
+    setIsDrawing(false);
+
+    const finalShape = createShapeInstance(
       currentTool,
       startPos.x,
       startPos.y,
       x,
       y,
     );
-    if (shape) {
-      const added = globalEditor.addShape(shape);
-      if (!added) alert(`Досягнуто ліміт (${globalEditor.N})!`);
+    if (finalShape) {
+      globalMyEditor.addShape(finalShape);
     }
 
-    globalEditor.tempShape = null;
-    setIsDrawing(false);
     redrawCanvas();
   };
 
   const handleClearCanvas = () => {
-    globalEditor.clear();
+    globalMyEditor.clear();
     redrawCanvas();
     setOpenMenu(null);
   };
 
   const handleSaveToFile = () => {
-    const dataToSave = globalEditor.pcshape.map((shape) => shape.toJSON());
+    const dataToSave = globalMyEditor
+      .getShapes()
+      .map((shape) => shape.toJSON());
     const jsonString = JSON.stringify(dataToSave, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -118,10 +151,11 @@ function App() {
       try {
         const parsedData = JSON.parse(event.target.result);
         if (Array.isArray(parsedData)) {
-          globalEditor.pcshape = parsedData
+          const loadedShapes = parsedData
             .map((data) => createShapeFromJSON(data))
-            .filter((shape) => shape !== null);
+            .filter((s) => s !== null);
 
+          globalMyEditor.setShapes(loadedShapes);
           redrawCanvas();
         }
       } catch (err) {
@@ -192,20 +226,19 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  setCurrentTool("ellipse");
+                  setCurrentTool("circle");
                   setOpenMenu(null);
                 }}
               >
-                {currentTool === "ellipse" ? "✓ " : ""}Еліпс
+                {currentTool === "circle" ? "✓ " : ""}Окружність
               </button>
               <button
                 onClick={() => {
-                  setCurrentTool("lineWithCircles");
+                  setCurrentTool("line_circles");
                   setOpenMenu(null);
                 }}
               >
-                {currentTool === "lineWithCircles" ? "✓ " : ""}Лінія з
-                кружечками
+                {currentTool === "line_circles" ? "✓ " : ""}Лінія з кружечками
               </button>
               <button
                 onClick={() => {
@@ -254,7 +287,6 @@ function App() {
               y2="4"
               stroke="currentColor"
               strokeWidth="2.5"
-              strokeLinecap="round"
             />
           </svg>
         </button>
@@ -273,22 +305,20 @@ function App() {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              rx="1"
             />
           </svg>
         </button>
 
         <button
-          className={`toolbar-btn ${currentTool === "ellipse" ? "active" : ""}`}
-          onClick={() => setCurrentTool("ellipse")}
-          title="Еліпс"
+          className={`toolbar-btn ${currentTool === "circle" ? "active" : ""}`}
+          onClick={() => setCurrentTool("circle")}
+          title="Окружність"
         >
           <svg width="18" height="18" viewBox="0 0 24 24">
-            <ellipse
+            <circle
               cx="12"
               cy="12"
-              rx="9"
-              ry="6"
+              r="8"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -297,21 +327,23 @@ function App() {
         </button>
 
         <button
-          className={`toolbar-btn ${currentTool === "lineWithCircles" ? "active" : ""}`}
-          onClick={() => setCurrentTool("lineWithCircles")}
+          className={`toolbar-btn ${
+            currentTool === "line_circles" ? "active" : ""
+          }`}
+          onClick={() => setCurrentTool("line_circles")}
           title="Лінія з кружечками"
         >
           <svg width="18" height="18" viewBox="0 0 24 24">
             <line
-              x1="6"
-              y1="18"
-              x2="18"
-              y2="6"
+              x1="5"
+              y1="19"
+              x2="19"
+              y2="5"
               stroke="currentColor"
               strokeWidth="2"
             />
-            <circle cx="6" cy="18" r="3" fill="currentColor" />
-            <circle cx="18" cy="6" r="3" fill="currentColor" />
+            <circle cx="5" cy="19" r="3" fill="currentColor" />
+            <circle cx="19" cy="5" r="3" fill="currentColor" />
           </svg>
         </button>
 
@@ -323,49 +355,49 @@ function App() {
           <svg width="18" height="18" viewBox="0 0 24 24">
             <rect
               x="3"
-              y="9"
-              width="12"
-              height="12"
+              y="7"
+              width="13"
+              height="13"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
             />
             <rect
-              x="9"
-              y="3"
-              width="12"
-              height="12"
+              x="8"
+              y="2"
+              width="13"
+              height="13"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
             />
             <line
               x1="3"
-              y1="9"
-              x2="9"
-              y2="3"
+              y1="7"
+              x2="8"
+              y2="2"
               stroke="currentColor"
               strokeWidth="1.5"
             />
             <line
-              x1="15"
-              y1="9"
+              x1="16"
+              y1="7"
               x2="21"
-              y2="3"
+              y2="2"
               stroke="currentColor"
               strokeWidth="1.5"
             />
             <line
               x1="3"
-              y1="21"
-              x2="9"
+              y1="20"
+              x2="8"
               y2="15"
               stroke="currentColor"
               strokeWidth="1.5"
             />
             <line
-              x1="15"
-              y1="21"
+              x1="16"
+              y1="20"
               x2="21"
               y2="15"
               stroke="currentColor"
@@ -395,20 +427,19 @@ function App() {
       </div>
 
       {showAbout && (
-        <div className="modal-overlay" onClick={() => setShowAbout(false)}>
-          <div className="about-modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Лабораторна №4 (Варіант 5)</h2>
+        <div className="modal-overlay">
+          <div className="about-modal">
+            <h2>Про програму</h2>
             <div className="about-section">
-              <strong>Редактор:</strong>
-              <p>глобальний статичний MyEditor</p>
+              <strong>Архітектура:</strong>
+              <p>• Глобальний статичний об'єкт класу MyEditor</p>
             </div>
             <div className="about-section">
-              <strong>Гумовий слід:</strong>
-              <p>пунктирна лінія синього кольору</p>
-            </div>
-            <div className="about-section">
-              <strong>Нові фігури:</strong>
-              <p>Лінія з кружечками, Каркас куба</p>
+              <strong>Параметри:</strong>
+              <p>• Прямокутник (по 2 кутах, жовта заливка)</p>
+              <p>• Окружність (від центру, біла заливка)</p>
+              <p>• Позначка типу об'єкта — галочка ✓ у меню "Об'єкти"</p>
+              <p>• Гумовий слід — пунктирна чорна лінія</p>
             </div>
             <button className="close-btn" onClick={() => setShowAbout(false)}>
               Закрити
