@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { globalEditor } from "./editor";
-import { PointShape, createShapeFromCSV } from "./shapes";
+import { PointShape, createShapeFromJSON } from "./shapes";
 import { MyTable } from "./MyTable";
 import "./App.css";
 
@@ -29,14 +29,21 @@ function App() {
 
     if (globalEditor.tempShape) {
       const { x1, y1, x2, y2 } = globalEditor.tempShape;
-      ctx.save();
-      ctx.strokeStyle = "blue";
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-      ctx.restore();
+      const tempInstance = globalEditor.createShape(
+        currentTool,
+        x1,
+        y1,
+        x2,
+        y2,
+      );
+
+      if (tempInstance) {
+        ctx.save();
+        ctx.strokeStyle = "black";
+        ctx.setLineDash([6, 6]);
+        tempInstance.draw(ctx, true);
+        ctx.restore();
+      }
     }
   };
 
@@ -63,7 +70,6 @@ function App() {
 
   const handleMouseMove = (e) => {
     if (!isDrawing || currentTool === "point") return;
-
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -74,7 +80,6 @@ function App() {
 
   const handleMouseUp = (e) => {
     if (!isDrawing || currentTool === "point") return;
-
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -103,20 +108,20 @@ function App() {
     setOpenMenu(null);
   };
 
-  const handleSaveToCSV = () => {
-    const csvData = globalEditor.exportToCSV();
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
+  const handleSaveToJSON = () => {
+    const dataToSave = globalEditor.pcshape.map((shape) => shape.toJSON());
+    const jsonString = JSON.stringify(dataToSave, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
     a.href = url;
-    a.download = "shapes_lab5.csv";
+    a.download = "shapes_lab5.json";
     a.click();
     URL.revokeObjectURL(url);
     setOpenMenu(null);
   };
 
-  const handleOpenCSV = (e) => {
+  const handleOpenJSON = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -124,16 +129,19 @@ function App() {
     reader.onload = (event) => {
       try {
         const text = event.target.result;
-        const lines = text.split("\n");
-        const loadedShapes = lines
-          .map((line) => createShapeFromCSV(line))
-          .filter((s) => s !== null);
+        const parsedData = JSON.parse(text);
 
-        globalEditor.pcshape = loadedShapes;
-        setSelectedIndex(null);
-        redrawCanvas();
+        if (Array.isArray(parsedData)) {
+          const loadedShapes = parsedData
+            .map((data) => createShapeFromJSON(data))
+            .filter((s) => s !== null);
+
+          globalEditor.pcshape = loadedShapes;
+          setSelectedIndex(null);
+          redrawCanvas();
+        }
       } catch (err) {
-        alert("Помилка зчитування CSV-файлу!");
+        alert("Помилка зчитування JSON-файлу!");
       }
     };
     reader.readAsText(file);
@@ -141,7 +149,7 @@ function App() {
   };
 
   const handleSelectObject = (index) => {
-    setSelectedIndex(index);
+    setSelectedIndex(index === selectedIndex ? null : index);
   };
 
   const handleDeleteObject = (index) => {
@@ -167,9 +175,9 @@ function App() {
           {openMenu === "file" && (
             <div className="dropdown-menu">
               <button onClick={() => fileInputRef.current.click()}>
-                Відкрити CSV...
+                Відкрити JSON...
               </button>
-              <button onClick={handleSaveToCSV}>Зберегти в CSV...</button>
+              <button onClick={handleSaveToJSON}>Зберегти в JSON...</button>
               <button onClick={handleClearCanvas}>Очистити</button>
             </div>
           )}
@@ -324,7 +332,9 @@ function App() {
         </button>
 
         <button
-          className={`toolbar-btn ${currentTool === "lineWithCircles" ? "active" : ""}`}
+          className={`toolbar-btn ${
+            currentTool === "lineWithCircles" ? "active" : ""
+          }`}
           onClick={() => setCurrentTool("lineWithCircles")}
           title="Лінія з кружечками"
         >
@@ -406,8 +416,8 @@ function App() {
         type="file"
         ref={fileInputRef}
         style={{ display: "none" }}
-        accept=".csv,.txt"
-        onChange={handleOpenCSV}
+        accept=".json"
+        onChange={handleOpenJSON}
       />
 
       <div className="canvas-container">
@@ -445,11 +455,7 @@ function App() {
             </div>
             <div className="about-section">
               <strong>Формат файлів:</strong>
-              <p>CSV (тип, x1, y1, x2, y2)</p>
-            </div>
-            <div className="about-section">
-              <strong>Бонуси:</strong>
-              <p>Синхронне виділення та вилучення об'єктів</p>
+              <p>JSON (тип, x1, y1, x2, y2)</p>
             </div>
             <button className="close-btn" onClick={() => setShowAbout(false)}>
               Закрити

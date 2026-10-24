@@ -8,7 +8,7 @@ export class Shape {
     this.isSelected = false;
   }
 
-  draw(ctx) {}
+  draw(ctx, isTemporary = false) {}
 
   getTypeName() {
     switch (this.type) {
@@ -29,8 +29,14 @@ export class Shape {
     }
   }
 
-  toCSV() {
-    return `${this.type},${Math.round(this.x1)},${Math.round(this.y1)},${Math.round(this.x2)},${Math.round(this.y2)}`;
+  toJSON() {
+    return {
+      type: this.type,
+      x1: Math.round(this.x1),
+      y1: Math.round(this.y1),
+      x2: Math.round(this.x2),
+      y2: Math.round(this.y2),
+    };
   }
 
   drawSelection(ctx) {
@@ -54,12 +60,24 @@ export class PointShape extends Shape {
     super("point", x1, y1, x2, y2);
   }
 
-  draw(ctx) {
+  draw(ctx, isTemporary = false) {
+    ctx.save();
     ctx.fillStyle = "black";
     ctx.beginPath();
     ctx.arc(this.x1, this.y1, 2, 0, 2 * Math.PI);
     ctx.fill();
-    this.drawSelection(ctx);
+    ctx.restore();
+    if (!isTemporary) this.drawSelection(ctx);
+  }
+
+  drawSelection(ctx) {
+    if (!this.isSelected) return;
+    ctx.save();
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(this.x1 - 6, this.y1 - 6, 12, 12);
+    ctx.restore();
   }
 }
 
@@ -68,14 +86,16 @@ export class LineShape extends Shape {
     super("line", x1, y1, x2, y2);
   }
 
-  draw(ctx) {
-    ctx.strokeStyle = "black";
-    ctx.setLineDash([]);
+  draw(ctx, isTemporary = false) {
+    ctx.save();
+    ctx.strokeStyle = isTemporary ? "black" : "black";
+    ctx.setLineDash(isTemporary ? [6, 6] : []);
     ctx.beginPath();
     ctx.moveTo(this.x1, this.y1);
     ctx.lineTo(this.x2, this.y2);
     ctx.stroke();
-    this.drawSelection(ctx);
+    ctx.restore();
+    if (!isTemporary) this.drawSelection(ctx);
   }
 }
 
@@ -84,21 +104,26 @@ export class RectangleShape extends Shape {
     super("rect", x1, y1, x2, y2);
   }
 
-  draw(ctx) {
+  draw(ctx, isTemporary = false) {
     const startX = Math.min(this.x1, this.x2);
     const startY = Math.min(this.y1, this.y2);
     const width = Math.abs(this.x2 - this.x1);
     const height = Math.abs(this.y2 - this.y1);
 
-    ctx.fillStyle = "yellow";
-    ctx.strokeStyle = "black";
-    ctx.setLineDash([]);
+    ctx.save();
+    ctx.strokeStyle = isTemporary ? "black" : "black";
+    ctx.setLineDash(isTemporary ? [6, 6] : []);
 
-    ctx.beginPath();
-    ctx.rect(startX, startY, width, height);
-    ctx.fill();
-    ctx.stroke();
-    this.drawSelection(ctx);
+    if (!isTemporary) {
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(startX, startY, width, height);
+      ctx.strokeRect(startX, startY, width, height);
+    } else {
+      ctx.strokeRect(startX, startY, width, height);
+    }
+    ctx.restore();
+
+    if (!isTemporary) this.drawSelection(ctx);
   }
 }
 
@@ -107,19 +132,43 @@ export class EllipseShape extends Shape {
     super("ellipse", x1, y1, x2, y2);
   }
 
-  draw(ctx) {
+  draw(ctx, isTemporary = false) {
     const rx = Math.abs(this.x2 - this.x1);
     const ry = Math.abs(this.y2 - this.y1);
 
-    ctx.fillStyle = "white";
-    ctx.strokeStyle = "black";
-    ctx.setLineDash([]);
+    ctx.save();
+    ctx.strokeStyle = isTemporary ? "black" : "black";
+    ctx.setLineDash(isTemporary ? [6, 6] : []);
 
     ctx.beginPath();
     ctx.ellipse(this.x1, this.y1, rx, ry, 0, 0, 2 * Math.PI);
-    ctx.fill();
+
+    if (!isTemporary) {
+      ctx.fillStyle = "white";
+      ctx.fill();
+    }
     ctx.stroke();
-    this.drawSelection(ctx);
+    ctx.restore();
+
+    if (!isTemporary) this.drawSelection(ctx);
+  }
+
+  drawSelection(ctx) {
+    if (!this.isSelected) return;
+    const rx = Math.abs(this.x2 - this.x1);
+    const ry = Math.abs(this.y2 - this.y1);
+
+    const startX = this.x1 - rx - 5;
+    const startY = this.y1 - ry - 5;
+    const w = rx * 2 + 10;
+    const h = ry * 2 + 10;
+
+    ctx.save();
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(startX, startY, w, h);
+    ctx.restore();
   }
 }
 
@@ -131,26 +180,41 @@ export class LineWithCirclesShape extends Shape {
     this.circle2 = new EllipseShape(x2, y2, x2 + 5, y2 + 5);
   }
 
-  draw(ctx) {
+  draw(ctx, isTemporary = false) {
     this.line.x1 = this.x1;
     this.line.y1 = this.y1;
     this.line.x2 = this.x2;
     this.line.y2 = this.y2;
-    this.line.draw(ctx);
+    this.line.draw(ctx, isTemporary);
 
     this.circle1.x1 = this.x1;
     this.circle1.y1 = this.y1;
     this.circle1.x2 = this.x1 + 6;
     this.circle1.y2 = this.y1 + 6;
-    this.circle1.draw(ctx);
+    this.circle1.draw(ctx, isTemporary);
 
     this.circle2.x1 = this.x2;
     this.circle2.y1 = this.y2;
     this.circle2.x2 = this.x2 + 6;
     this.circle2.y2 = this.y2 + 6;
-    this.circle2.draw(ctx);
+    this.circle2.draw(ctx, isTemporary);
 
-    this.drawSelection(ctx);
+    if (!isTemporary) this.drawSelection(ctx);
+  }
+
+  drawSelection(ctx) {
+    if (!this.isSelected) return;
+    const minX = Math.min(this.x1, this.x2) - 11;
+    const minY = Math.min(this.y1, this.y2) - 11;
+    const maxX = Math.max(this.x1, this.x2) + 11;
+    const maxY = Math.max(this.y1, this.y2) + 11;
+
+    ctx.save();
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+    ctx.restore();
   }
 }
 
@@ -159,7 +223,7 @@ export class CubeShape extends Shape {
     super("cube", x1, y1, x2, y2);
   }
 
-  draw(ctx) {
+  draw(ctx, isTemporary = false) {
     const startX = Math.min(this.x1, this.x2);
     const startY = Math.min(this.y1, this.y2);
     const w = Math.abs(this.x2 - this.x1);
@@ -170,14 +234,15 @@ export class CubeShape extends Shape {
     const p2 = { x: startX + w, y: startY };
     const p3 = { x: startX + w, y: startY + h };
     const p4 = { x: startX, y: startY + h };
-
     const p5 = { x: startX + offset, y: startY - offset };
     const p6 = { x: startX + w + offset, y: startY - offset };
     const p7 = { x: startX + w + offset, y: startY + h - offset };
     const p8 = { x: startX + offset, y: startY + h - offset };
 
-    ctx.strokeStyle = "black";
-    ctx.setLineDash([]);
+    ctx.save();
+    ctx.strokeStyle = isTemporary ? "black" : "black";
+    ctx.setLineDash(isTemporary ? [6, 6] : []);
+
     ctx.strokeRect(startX, startY, w, h);
     ctx.strokeRect(p5.x, p5.y, w, h);
 
@@ -188,33 +253,49 @@ export class CubeShape extends Shape {
       new LineShape(p4.x, p4.y, p8.x, p8.y),
     ];
 
-    connectingLines.forEach((line) => line.draw(ctx));
-    this.drawSelection(ctx);
+    connectingLines.forEach((line) => line.draw(ctx, isTemporary));
+    ctx.restore();
+
+    if (!isTemporary) this.drawSelection(ctx);
+  }
+
+  drawSelection(ctx) {
+    if (!this.isSelected) return;
+    const startX = Math.min(this.x1, this.x2);
+    const startY = Math.min(this.y1, this.y2);
+    const w = Math.abs(this.x2 - this.x1);
+    const h = Math.abs(this.y2 - this.y1);
+    const offset = Math.min(w, h) * 0.35;
+
+    const minX = startX - 5;
+    const minY = startY - offset - 5;
+    const totalW = w + offset + 10;
+    const totalH = h + offset + 10;
+
+    ctx.save();
+    ctx.strokeStyle = "red";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(minX, minY, totalW, totalH);
+    ctx.restore();
   }
 }
 
-export function createShapeFromCSV(line) {
-  const parts = line.split(",");
-  if (parts.length < 5) return null;
-  const type = parts[0].trim();
-  const x1 = parseFloat(parts[1]);
-  const y1 = parseFloat(parts[2]);
-  const x2 = parseFloat(parts[3]);
-  const y2 = parseFloat(parts[4]);
-
-  switch (type) {
+export function createShapeFromJSON(data) {
+  if (!data || !data.type) return null;
+  switch (data.type) {
     case "point":
-      return new PointShape(x1, y1, x2, y2);
+      return new PointShape(data.x1, data.y1, data.x2, data.y2);
     case "line":
-      return new LineShape(x1, y1, x2, y2);
+      return new LineShape(data.x1, data.y1, data.x2, data.y2);
     case "rect":
-      return new RectangleShape(x1, y1, x2, y2);
+      return new RectangleShape(data.x1, data.y1, data.x2, data.y2);
     case "ellipse":
-      return new EllipseShape(x1, y1, x2, y2);
+      return new EllipseShape(data.x1, data.y1, data.x2, data.y2);
     case "lineWithCircles":
-      return new LineWithCirclesShape(x1, y1, x2, y2);
+      return new LineWithCirclesShape(data.x1, data.y1, data.x2, data.y2);
     case "cube":
-      return new CubeShape(x1, y1, x2, y2);
+      return new CubeShape(data.x1, data.y1, data.x2, data.y2);
     default:
       return null;
   }

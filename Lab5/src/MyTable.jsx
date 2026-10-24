@@ -1,6 +1,5 @@
 import React from "react";
 import "./MyTable.css";
-
 export function MyTable({
   shapes,
   selectedIndex,
@@ -16,7 +15,6 @@ export function MyTable({
           ✕
         </button>
       </div>
-
       <div className="table-body">
         {shapes.length === 0 ? (
           <div className="empty-msg">Немає побудованих об'єктів</div>
@@ -53,7 +51,6 @@ export function MyTable({
           </table>
         )}
       </div>
-
       <div className="table-footer">
         <button
           className="delete-btn"

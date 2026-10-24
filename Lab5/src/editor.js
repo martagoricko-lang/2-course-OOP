@@ -6,10 +6,8 @@ import {
   LineWithCirclesShape,
   CubeShape,
 } from "./shapes";
-
 export class MyEditor {
   static instance = null;
-
   constructor(N = 106) {
     if (MyEditor.instance) {
       return MyEditor.instance;
@@ -19,19 +17,16 @@ export class MyEditor {
     this.tempShape = null;
     MyEditor.instance = this;
   }
-
   static getInstance(N = 106) {
     if (!MyEditor.instance) {
       MyEditor.instance = new MyEditor(N);
     }
     return MyEditor.instance;
   }
-
   clear() {
     this.pcshape = [];
     this.tempShape = null;
   }
-
   addShape(shape) {
     if (this.pcshape.length < this.N) {
       this.pcshape.push(shape);
@@ -39,7 +34,6 @@ export class MyEditor {
     }
     return false;
   }
-
   removeShapeAt(index) {
     if (index >= 0 && index < this.pcshape.length) {
       this.pcshape.splice(index, 1);
@@ -47,7 +41,6 @@ export class MyEditor {
     }
     return false;
   }
-
   createShape(tool, x1, y1, x2, y2) {
     switch (tool) {
       case "line":
@@ -64,10 +57,5 @@ export class MyEditor {
         return null;
     }
   }
-
-  exportToCSV() {
-    return this.pcshape.map((s) => s.toCSV()).join("\n");
-  }
 }
-
 export const globalEditor = MyEditor.getInstance(106);
