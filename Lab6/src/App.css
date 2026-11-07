@@ -1,0 +1,175 @@
+/* Загальні стилі та рожева палітра */
+:root {
+  --pink-main: #e91e63;
+  --pink-light: #fce4ec;
+  --pink-hover: #f8bbd0;
+  --pink-dark: #c2185b;
+  --pink-accent: #d81b60;
+  --bg-gradient: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: var(--bg-gradient);
+  color: #333;
+  min-height: 100vh;
+}
+
+.app-container {
+  max-width: 550px;
+  margin: 30px auto;
+  padding: 25px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(233, 30, 99, 0.15);
+  border: 2px solid var(--pink-hover);
+}
+
+h2,
+h3 {
+  color: var(--pink-dark);
+  margin-top: 0;
+  border-bottom: 2px solid var(--pink-light);
+  padding-bottom: 8px;
+  text-align: center;
+}
+
+/* Форми та поля вводу */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  background: var(--pink-light);
+  padding: 15px;
+  border-radius: 8px;
+}
+
+label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  color: #4a4a4a;
+}
+
+/* Поля вводу з тонкою рожевою рамкою */
+input[type="number"] {
+  width: 80px;
+  padding: 6px 12px;
+  background-color: #ffffff !important;
+  color: var(--pink-dark) !important;
+  border: 1px solid var(--pink-main); /* Зменшили товщину лінії з 2px до 1px */
+  border-radius: 6px;
+  outline: none;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+input[type="number"]:focus {
+  border-color: var(--pink-dark);
+  box-shadow: 0 0 4px rgba(233, 30, 99, 0.25);
+}
+
+/* Кнопки */
+.btn-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+button {
+  flex: 1;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+/* Перша кнопка — з ніжним рожевим фоном як у другої */
+.btn-primary {
+  background-color: #f48fb1;
+  color: #880e4f;
+}
+
+.btn-primary:hover {
+  background-color: #f06292;
+  color: #ffffff;
+}
+
+/* Другорядна (червоно-рожева) кнопка */
+.btn-danger {
+  background-color: #f48fb1;
+  color: #880e4f;
+}
+
+.btn-danger:hover {
+  background-color: #f06292;
+  color: #ffffff;
+}
+
+/* Блок статусу без рожевої смужки зліва */
+.status-box {
+  padding: 12px 16px;
+  background-color: var(--pink-light);
+  border: none; /* Прибираємо всі рамки */
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  text-align: center; /* Центруємо текст статусу */
+}
+
+/* Таблиці для Object2 та Object3 */
+.matrix-table {
+  border-collapse: collapse;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.matrix-table td {
+  border: 1px solid var(--pink-hover);
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  color: var(--pink-dark);
+  background-color: #ffffff;
+}
+
+.result-card {
+  margin-top: 20px;
+  padding: 15px;
+  background: var(--pink-light);
+  border-radius: 8px;
+  text-align: center;
+  border: 2px dashed var(--pink-main);
+}
+
+.result-value {
+  font-size: 28px;
+  font-weight: bold;
+  color: var(--pink-dark);
+}
+
+/* Приховуємо системні стрілочки спинера для Chrome, Safari, Edge, Opera */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Приховуємо для Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
