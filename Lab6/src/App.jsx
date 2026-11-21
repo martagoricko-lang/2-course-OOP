@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
@@ -7,51 +7,29 @@ function App() {
   const [max, setMax] = useState(10);
   const [status, setStatus] = useState("Готовий до запуску");
 
-  const win2Ref = useRef(null);
-  const win3Ref = useRef(null);
-
-  // СЮДИ ДОДАЄМО: Прослуховування повідомлення від Object3
   useEffect(() => {
-    const channel = new BroadcastChannel("matrix_channel");
+    if (!window.electronIPC) return;
 
-    channel.onmessage = (event) => {
-      const { type, payload } = event.data;
-      if (type === "DETERMINANT_CALCULATED") {
-        setStatus(`Обчислення завершено! Детермінант = ${payload.result}`);
-      }
-    };
+    window.electronIPC.onDeterminantResult((result) => {
+      setStatus(`Обчислення завершено! Детермінант = ${result}`);
+    });
 
-    return () => channel.close();
+    window.electronIPC.onWindowsClosed(() => {
+      setStatus("Усі вікна закрито");
+    });
   }, []);
 
   const handleStartProcess = () => {
-    win2Ref.current = window.open(
-      "/object2.html",
-      "Object2Window",
-      "width=450,height=450,left=100,top=100",
-    );
-    win3Ref.current = window.open(
-      "/object3.html",
-      "Object3Window",
-      "width=450,height=450,left=600,top=100",
-    );
-
-    setStatus("Вікна відкрито. Надсилання параметрів...");
-
-    setTimeout(() => {
-      const channel = new BroadcastChannel("matrix_channel");
-      channel.postMessage({
-        type: "GENERATE_MATRIX",
-        payload: { n: Number(n), min: Number(min), max: Number(max) },
-      });
-      setStatus("Параметри надіслано в Object2. Очікуємо обчислення...");
-    }, 1000);
+    setStatus("Відкриття вікон та надсилання параметрів через IPC...");
+    window.electronIPC?.startAndGenerate({
+      n: Number(n),
+      min: Number(min),
+      max: Number(max),
+    });
   };
 
   const handleCloseAllWindows = () => {
-    if (win2Ref.current) win2Ref.current.close();
-    if (win3Ref.current) win3Ref.current.close();
-    setStatus("Усі вікна закрито");
+    window.electronIPC?.closeChildWindows();
   };
 
   return (

@@ -3,41 +3,31 @@ import "./App.css";
 
 function Object2App() {
   const [matrix, setMatrix] = useState([]);
-  const [info, setInfo] = useState("Очікування параметрів від Lab6...");
+  const [info, setInfo] = useState("Очікування IPC-повідомлення від Lab6...");
 
   useEffect(() => {
-    const channel = new BroadcastChannel("matrix_channel");
+    if (!window.electronIPC) return;
 
-    channel.onmessage = (event) => {
-      const { type, payload } = event.data;
-      if (type === "GENERATE_MATRIX") {
-        const { n, min, max } = payload;
-
-        const newMatrix = [];
-        for (let i = 0; i < n; i++) {
-          const row = [];
-          for (let j = 0; j < n; j++) {
-            row.push(Math.floor(Math.random() * (max - min + 1)) + min);
-          }
-          newMatrix.push(row);
+    window.electronIPC.onGenerateMatrix(({ n, min, max }) => {
+      const newMatrix = [];
+      for (let i = 0; i < n; i++) {
+        const row = [];
+        for (let j = 0; j < n; j++) {
+          row.push(Math.floor(Math.random() * (max - min + 1)) + min);
         }
-
-        setMatrix(newMatrix);
-        setInfo(`Згенеровано матрицю ${n}x${n}`);
-
-        channel.postMessage({
-          type: "MATRIX_DATA",
-          payload: { matrix: newMatrix },
-        });
+        newMatrix.push(row);
       }
-    };
 
-    return () => channel.close();
+      setMatrix(newMatrix);
+      setInfo(`Згенеровано матрицю ${n}×${n}`);
+
+      window.electronIPC.sendMatrixData(newMatrix);
+    });
   }, []);
 
   return (
     <div className="app-container">
-      <h3>Object2</h3>
+      <h3>Програма Object2</h3>
       <p>
         <em>{info}</em>
       </p>

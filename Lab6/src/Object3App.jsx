@@ -4,7 +4,7 @@ import "./App.css";
 function calcDeterminant(m) {
   const n = m.length;
   if (n === 1) return m[0][0];
-  if (n === 2) return m[0][0] * m[1][1] - m[0][0] * m[1][0];
+  if (n === 2) return m[0][0] * m[1][1] - m[0][1] * m[1][0];
 
   let det = 0;
   for (let j = 0; j < n; j++) {
@@ -18,35 +18,25 @@ function calcDeterminant(m) {
 
 function Object3App() {
   const [detResult, setDetResult] = useState(null);
-  const [info, setInfo] = useState("Очікування даних від Object2...");
+  const [info, setInfo] = useState("Очікування IPC-даних від Object2...");
 
   useEffect(() => {
-    const channel = new BroadcastChannel("matrix_channel");
+    if (!window.electronIPC) return;
 
-    channel.onmessage = (event) => {
-      const { type, payload } = event.data;
-      if (type === "MATRIX_DATA") {
-        const { matrix } = payload;
-        const det = calcDeterminant(matrix);
-        setDetResult(det);
-        setInfo(
-          `Матрицю отримано. Розмірність: ${matrix.length}x${matrix.length}`,
-        );
+    window.electronIPC.onMatrixData((matrix) => {
+      const det = calcDeterminant(matrix);
+      setDetResult(det);
+      setInfo(
+        `Матрицю отримано через IPC. Розмірність: ${matrix.length}×${matrix.length}`,
+      );
 
-        // СЮДИ ДОДАЄМО: Надсилаємо зворотний статус головному вікну Lab6!
-        channel.postMessage({
-          type: "DETERMINANT_CALCULATED",
-          payload: { result: det },
-        });
-      }
-    };
-
-    return () => channel.close();
+      window.electronIPC.sendDeterminantResult(det);
+    });
   }, []);
 
   return (
     <div className="app-container">
-      <h3>Object3</h3>
+      <h3>Програма Object3</h3>
       <p>
         <em>{info}</em>
       </p>
